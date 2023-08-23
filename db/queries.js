@@ -32,13 +32,13 @@ async function viewEmployees() {
         employees.first_name,
         employees.last_name,
         roles.title,
-        department.name AS department,
+        department.title_name AS department,
         roles.salary,
         CONCAT(manager.first_name, ' ', manager.last_name) AS manager
         FROM employees
         INNER JOIN roles ON employees.role_id = roles.id
         INNER JOIN department ON roles.department_id = department.id
-        LEFT JOIN employee manager ON manager.id = employees.manager_id; `);
+        LEFT JOIN employees manager ON manager.id = employees.manager_id; `);
     return rows;
   } catch (error) {
     console.error("error fetching employees:", error);
@@ -49,7 +49,7 @@ async function viewEmployees() {
 // Function to add a department
 async function addDepartment(name) {
   try {
-    await connection.execute("INSERT INTO department (name) VALUES (?)", [
+    await connection.execute("INSERT INTO department (title_name) VALUES (?)", [
       name,
     ]);
     console.log(`Department "${name}" added successfully.`);
@@ -74,12 +74,24 @@ async function addRole(title, salary, departmentId) {
 }
 
 // Function to add an employee
-async function addEmployee(firstName, lastName, roleId, managerId) {
+async function addEmployee(firstName, lastName, roleId, managerId = null) {
   try {
-    await connection.execute(
-      "INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",
-      [firstName, lastName, roleId, managerId]
-    );
+    const values = [firstName, lastName, roleId];
+    let placeholders = "?, ?, ?";
+
+    if (managerId !== null) {
+      placeholders += ", ?";
+      values.push(managerId);
+    }
+
+    const query = `
+        INSERT INTO employees (first_name, last_name, role_id${
+          managerId !== null ? ", manager_id" : ""
+        })
+        VALUES (${placeholders})
+      `;
+
+    await connection.execute(query, values);
     console.log(`Employee "${firstName} ${lastName}" added successfully.`);
   } catch (error) {
     console.error("Error adding employee:", error);
@@ -133,7 +145,7 @@ async function getEmployeesByManager(managerId) {
 async function getEmployeesByDepartment(departmentId) {
   try {
     const [rows] = await connection.execute(
-      "SELECT * FROM employees WHERE role_id IN (SELECT id FROM role WHERE department_id = ?)",
+      "SELECT * FROM employees WHERE role_id IN (SELECT id FROM roles WHERE department_id = ?)",
       [departmentId]
     );
     return rows;
@@ -170,7 +182,9 @@ async function deleteRole(roleId) {
 // Function to delete an employee
 async function deleteEmployee(employeeId) {
   try {
-    await connection.execute("DELETE FROM employees WHERE id = ?", [employeeId]);
+    await connection.execute("DELETE FROM employees WHERE id = ?", [
+      employeeId,
+    ]);
     console.log(`Employee deleted successfully.`);
   } catch (error) {
     console.error("Error deleting employee:", error);
