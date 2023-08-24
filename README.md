@@ -19,6 +19,10 @@ N/A
 ## Usage
 Select prompt cases and input the required id or name to manage the table in the database.
 
+
+https://github.com/BLam1226/SQL-Employee-Tracker/assets/127125695/a630fa62-6dd2-4af0-904c-edc28b4121e7
+
+
 ## Contributing
 no idea
 
